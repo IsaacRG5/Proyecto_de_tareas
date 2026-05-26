@@ -1,0 +1,679 @@
+<!doctype html>
+
+<html class="light" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Riwiflow Dashboard - Kanban</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "secondary-fixed": "#e3e1ed",
+              tertiary: "#6b3000",
+              "surface-container-lowest": "#ffffff",
+              "on-primary-fixed-variant": "#5b00c5",
+              "on-tertiary-container": "#ffc19e",
+              "surface-container-low": "#f9f1ff",
+              secondary: "#5d5d67",
+              "on-secondary-container": "#64636d",
+              "inverse-on-surface": "#f6eefc",
+              "surface-dim": "#dfd7e5",
+              error: "#ba1a1a",
+              "secondary-fixed-dim": "#c7c5d1",
+              "on-primary-container": "#dac5ff",
+              "surface-variant": "#e8e0ee",
+              surface: "#fef7ff",
+              "inverse-primary": "#d3bbff",
+              "on-error": "#ffffff",
+              "surface-container-highest": "#e8e0ee",
+              "secondary-container": "#e3e1ed",
+              "on-primary-fixed": "#250059",
+              "on-secondary-fixed-variant": "#46464f",
+              "surface-container": "#f3ebf9",
+              "primary-container": "#6d28d9",
+              "outline-variant": "#ccc3d7",
+              "primary-fixed": "#ebddff",
+              "on-tertiary": "#ffffff",
+              "surface-container-high": "#ede5f3",
+              "surface-bright": "#fef7ff",
+              "primary-fixed-dim": "#d3bbff",
+              "on-primary": "#ffffff",
+              outline: "#7b7486",
+              "on-secondary": "#ffffff",
+              "on-tertiary-fixed-variant": "#743400",
+              background: "#fef7ff",
+              "tertiary-container": "#8f4200",
+              "on-secondary-fixed": "#1a1b23",
+              "error-container": "#ffdad6",
+              "on-background": "#1d1a24",
+              primary: "#5300b7",
+              "surface-tint": "#7331df",
+              "on-error-container": "#93000a",
+              "on-surface-variant": "#4a4455",
+              "tertiary-fixed-dim": "#ffb68b",
+              "on-surface": "#1d1a24",
+              "on-tertiary-fixed": "#321300",
+              "tertiary-fixed": "#ffdbc8",
+              "inverse-surface": "#332f39",
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              full: "0.75rem",
+            },
+            spacing: {
+              md: "16px",
+              xxl: "48px",
+              xl: "32px",
+              xs: "4px",
+              sm: "8px",
+              gutter: "24px",
+              lg: "24px",
+              "margin-mobile": "16px",
+            },
+            fontFamily: {
+              "display-lg-mobile": ["Inter"],
+              "body-sm": ["Inter"],
+              "label-sm": ["Inter"],
+              "title-sm": ["Inter"],
+              "headline-md": ["Inter"],
+              "display-lg": ["Inter"],
+              "body-md": ["Inter"],
+              "label-md": ["Inter"],
+            },
+            fontSize: {
+              "display-lg-mobile": [
+                "30px",
+                {
+                  lineHeight: "38px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "600",
+                },
+              ],
+              "body-sm": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+              "label-sm": [
+                "12px",
+                {
+                  lineHeight: "16px",
+                  letterSpacing: "0.05em",
+                  fontWeight: "600",
+                },
+              ],
+              "title-sm": ["18px", { lineHeight: "28px", fontWeight: "500" }],
+              "headline-md": [
+                "24px",
+                {
+                  lineHeight: "32px",
+                  letterSpacing: "-0.01em",
+                  fontWeight: "600",
+                },
+              ],
+              "display-lg": [
+                "36px",
+                {
+                  lineHeight: "44px",
+                  letterSpacing: "-0.02em",
+                  fontWeight: "600",
+                },
+              ],
+              "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+              "label-md": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 400,
+          "GRAD" 0,
+          "opsz" 24;
+        display: inline-block;
+        vertical-align: middle;
+        line-height: 1;
+      }
+      .kanban-column {
+        min-width: 280px;
+      }
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #ccc3d7;
+        border-radius: 10px;
+      }
+      .task-card:hover {
+        transform: translateY(-2px);
+        transition: all 0.2s ease;
+      }
+    </style>
+  </head>
+  <body class="bg-background text-on-background overflow-hidden h-screen flex">
+    <!-- SideNavBar Anchor -->
+    <aside
+      class="hidden md:flex flex-col pt-md pb-xl gap-xs h-full bg-surface-container-low border-r border-outline-variant w-[280px] shrink-0"
+    >
+      <div class="px-gutter mb-xl">
+        <h1 class="font-headline-md text-headline-md font-bold text-primary">
+          Riwiflow
+        </h1>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">
+          Product Team
+        </p>
+      </div>
+      <nav class="flex-1 space-y-1">
+        <a
+          class="flex items-center bg-primary-fixed text-on-primary-fixed-variant rounded-lg mx-2 px-4 py-3 font-body-sm text-body-sm transition-all scale-[0.98]"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" data-icon="dashboard"
+            >dashboard</span
+          >
+          <span>Dashboard</span>
+        </a>
+        <a
+          class="flex items-center text-secondary hover:text-primary hover:bg-primary-container/10 px-4 py-3 mx-2 font-body-sm text-body-sm rounded-lg transition-all"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" data-icon="assignment"
+            >assignment</span
+          >
+          <span>Projects</span>
+        </a>
+        <a
+          class="flex items-center text-secondary hover:text-primary hover:bg-primary-container/10 px-4 py-3 mx-2 font-body-sm text-body-sm rounded-lg transition-all"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" data-icon="group"
+            >group</span
+          >
+          <span>Team</span>
+        </a>
+        <a
+          class="flex items-center text-secondary hover:text-primary hover:bg-primary-container/10 px-4 py-3 mx-2 font-body-sm text-body-sm rounded-lg transition-all"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" data-icon="bar_chart"
+            >bar_chart</span
+          >
+          <span>Reports</span>
+        </a>
+        <a
+          class="flex items-center text-secondary hover:text-primary hover:bg-primary-container/10 px-4 py-3 mx-2 font-body-sm text-body-sm rounded-lg transition-all"
+          href="#"
+        >
+          <span class="material-symbols-outlined mr-3" data-icon="settings"
+            >settings</span
+          >
+          <span>Settings</span>
+        </a>
+      </nav>
+      <div class="px-4 mt-auto">
+        <button
+          class="w-full bg-primary text-on-primary py-3 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity"
+        >
+          <span class="material-symbols-outlined" data-icon="add">add</span>
+          New Project
+        </button>
+      </div>
+    </aside>
+    <main class="flex-1 flex flex-col min-w-0">
+      <!-- TopAppBar Anchor -->
+      <header
+        class="flex justify-between items-center h-16 px-gutter w-full bg-surface border-b border-outline-variant z-40"
+      >
+        <div class="flex items-center gap-4 flex-1">
+          <div class="relative max-w-md w-full">
+            <span
+              class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline"
+              data-icon="search"
+              >search</span
+            >
+            <input
+              class="w-full pl-10 pr-4 py-2 bg-surface-container border border-outline-variant rounded-full font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/20"
+              placeholder="Search tasks or files..."
+              type="text"
+            />
+          </div>
+        </div>
+        <div class="flex items-center gap-4 ml-4">
+          <button
+            class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors"
+            data-icon="notifications"
+          >
+            notifications
+          </button>
+          <button
+            class="material-symbols-outlined text-on-surface-variant hover:bg-surface-container-low p-2 rounded-full transition-colors"
+            data-icon="help_outline"
+          >
+            help_outline
+          </button>
+          <img
+            alt="User profile"
+            class="w-8 h-8 rounded-full border border-outline-variant object-cover"
+            data-alt="A professional high-resolution close-up portrait of a corporate professional in a modern office. The individual is wearing a smart minimalist outfit. The background consists of soft out-of-focus architectural lines of a contemporary tech hub with soft purple and lavender lighting, maintaining a bright and optimistic light-mode aesthetic."
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2-sF_Qd9jEF33fUrS3vMvdoA8rbw2_a6jzv7r_6oDikCkrertidHwLgqAtWuKvLnRx7Lcsi79ZYj4FBaL_pETFxeyeF27_PhXy-KnuioiYgCwYTKcWDEuZoRksSf8Jb0_ZmsxJkpTFGZ2bW8aTl5fhcA4DOHQQal_vu1KVBcizoM56dHRc7Ce_vkUul2aL96DSeDmqR4YdfGUuoIQkUF_F8AX45U05tmCFg7YyPH6xtgAx7e31u5_5e2rQxm_tgBEgnhV-LsqsEDH"
+          />
+        </div>
+      </header>
+      <!-- Content Area -->
+      <div class="flex-1 overflow-x-auto p-gutter custom-scrollbar">
+        <div class="flex gap-gutter h-full">
+          <!-- Column: To Do -->
+          <div class="kanban-column flex flex-col w-1/4 h-full">
+            <div class="flex items-center justify-between mb-md">
+              <div class="flex items-center gap-2">
+                <h3 class="font-title-sm text-title-sm text-on-surface">
+                  To Do
+                </h3>
+                <span
+                  class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                  >3</span
+                >
+              </div>
+              <button
+                class="material-symbols-outlined text-outline"
+                data-icon="more_horiz"
+              >
+                more_horiz
+              </button>
+            </div>
+            <div
+              class="flex-1 space-y-md p-2 bg-surface-container-low/50 rounded-xl overflow-y-auto custom-scrollbar"
+            >
+              <!-- Card 1 -->
+              <div
+                class="task-card bg-surface border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Design</span
+                  >
+                  <span
+                    class="material-symbols-outlined text-outline text-sm"
+                    data-icon="attach_file"
+                    >attach_file</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  User Flow Mapping
+                </h4>
+                <p
+                  class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2"
+                >
+                  Define the end-to-end journey for the new onboarding
+                  experience.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <div class="flex -space-x-2">
+                    <img
+                      class="w-6 h-6 rounded-full border-2 border-surface"
+                      data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBuiKEYj12lJcVG4nXyKu-Ai-H1-QlxIX2zT1jzk7AAD9j-20g91vBWIy1_5PsuU1H-g9vErAWuJJg3lohFPbVJhWG1ZwwSI2BxdTBpANzBluRwLzmBbnpSae8GQTTdZ1GoRzw9ZDPsxzDwyvkzduAyTDl3TN4KqDP45-VjqA0fxNIy5VVE5a8OP1OTlymungwOO-QcyUBGbbs24dxy1hwAoNbSe-uapYTlmCQYk70fcbq2y5m0xQhtlAZFbH8AX739jEY5b-ZtW8N"
+                    />
+                    <img
+                      class="w-6 h-6 rounded-full border-2 border-surface"
+                      data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMFhGwIRXSErcBCGHhCTzONc4V-aoXHbv3Bb0B7dMDwdGg3l25NTGZPNNlR82495ZLlhoi8IeMK0KPTuUrW88WE7s9j4EjcACUuB1g9sMjzjzkA9d7d81MuI0BQVZ3f1MpwplOXAbgD-_05LuexKrb1IwB3CVez6mpSbokMun24DLw7J4vebSUjPGu_Mwr4seNi9hsnr18iFZyzGmBUVQSd0m0C5xALrKW1O7O40Y3IEQ2eam3eWIY49HC4UoA7twGHVoe7FruTJIX"
+                    />
+                  </div>
+                  <span
+                    class="font-label-sm text-label-sm text-outline flex items-center gap-1"
+                  >
+                    <span
+                      class="material-symbols-outlined text-sm"
+                      data-icon="schedule"
+                      >schedule</span
+                    >
+                    2d
+                  </span>
+                </div>
+              </div>
+              <!-- Card 2 -->
+              <div
+                class="task-card bg-surface border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Marketing</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  Social Media Assets
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Prepare Q3 promotional graphics for LinkedIn and Twitter.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8_17Xd9poBFvBCwXx25-JDPMSaFQNMUYLnyIhJkS_7NrlsW0MG9R2vorE3CfNKMkE4oX4L6dopgc_F9_Mj5ieYPiBlGxLCK7vM7uFvfyHpx3ptCHdVbdU7CMDBms9ZPGXFfahQnM9P9g9yXvOtdU1ggtRwk5DPOV-sVnlAxxRUtrtEM23JonEusSqFOP1BU6Xt0wVnfWMpW6XxnekjrGmBQ0Qz4NJO8ogLugD809Cxp7wA4UIkAEYeZWpAJr8ZcVWbd46c9Rh1GI3"
+                  />
+                  <span
+                    class="font-label-sm text-label-sm text-outline flex items-center gap-1"
+                  >
+                    <span
+                      class="material-symbols-outlined text-sm"
+                      data-icon="schedule"
+                      >schedule</span
+                    >
+                    5d
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Column: In Progress -->
+          <div class="kanban-column flex flex-col w-1/4 h-full">
+            <div class="flex items-center justify-between mb-md">
+              <div class="flex items-center gap-2">
+                <h3 class="font-title-sm text-title-sm text-on-surface">
+                  In Progress
+                </h3>
+                <span
+                  class="bg-primary-container text-on-primary px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                  >2</span
+                >
+              </div>
+              <button
+                class="material-symbols-outlined text-outline"
+                data-icon="more_horiz"
+              >
+                more_horiz
+              </button>
+            </div>
+            <div
+              class="flex-1 space-y-md p-2 bg-surface-container-low/50 rounded-xl overflow-y-auto custom-scrollbar"
+            >
+              <!-- Card 3 -->
+              <div
+                class="task-card bg-surface border-l-4 border-l-primary border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Engineering</span
+                  >
+                  <span
+                    class="material-symbols-outlined text-primary text-sm"
+                    data-icon="star"
+                    data-weight="fill"
+                    style="font-variation-settings: &quot;FILL&quot; 1"
+                    >star</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  API Documentation
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Updating the public API docs for the v2.4 release next week.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuAG8Jxa-wc0IqXzwH5Eb-olQWjFfMH6FQefHNg8x204_qA5sVV-TBUkIl8wK1XSgpI1pH94oGq5yB9UyZeJy-d3z2R12xUy54PTHs5JoHE30eaqCX5BeKws1PCMN0TntyKW0UPojlBnG1xGY4-UQTrCOIhR7cF_zb7rj-vnemMaZQM9Xzk-F73_Q6MYD0msF1j-Tkjyrn2XQvujydcVmhnZnMOGv6P1Ep9OaJYUghQE93UdvLGAJptOXzhk3FK3LGn988gRhSTXAiBu"
+                  />
+                  <span
+                    class="font-label-sm text-label-sm text-primary font-bold flex items-center gap-1"
+                  >
+                    <span
+                      class="material-symbols-outlined text-sm"
+                      data-icon="hourglass_empty"
+                      >hourglass_empty</span
+                    >
+                    Today
+                  </span>
+                </div>
+              </div>
+              <!-- Card 4 -->
+              <div
+                class="task-card bg-surface border-l-4 border-l-primary border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Research</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  Competitor Analysis
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Reviewing the workflow engines of Top 3 competitors.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <div class="flex -space-x-2">
+                    <img
+                      class="w-6 h-6 rounded-full border-2 border-surface"
+                      data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                      src="https://lh3.googleusercontent.com/aida-public/AB6AXuB7eH2yKXhhilnQPSAOyYdRKaopgFMREF6HtX_HIwjq3xuZYm4ZKlfDScpoBQBZsx-IENtU6uQN2QYZ5NzpSJdRhBWtM8idDAOE-D4wRHS3sJHELvQyup3Rwd4WCNdJfNdOIqOGt5vYPK7Cr7HEToZLcjqgNcc_5rtPehgWnAAhwJZCgu6GuBlzBfIP3C3x7jfnHLDxqDxfaYiNb5DZxXt-ZYDO1HGYbCGbuaBRxwF44-BzDTjoYv5kPRqHchlMqBPoWVE_WDsiZ-cF"
+                    />
+                  </div>
+                  <span
+                    class="font-label-sm text-label-sm text-outline flex items-center gap-1"
+                  >
+                    <span
+                      class="material-symbols-outlined text-sm"
+                      data-icon="schedule"
+                      >schedule</span
+                    >
+                    3d
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Column: In Review -->
+          <div class="kanban-column flex flex-col w-1/4 h-full">
+            <div class="flex items-center justify-between mb-md">
+              <div class="flex items-center gap-2">
+                <h3 class="font-title-sm text-title-sm text-on-surface">
+                  In Review
+                </h3>
+                <span
+                  class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                  >2</span
+                >
+              </div>
+              <button
+                class="material-symbols-outlined text-outline"
+                data-icon="more_horiz"
+              >
+                more_horiz
+              </button>
+            </div>
+            <div
+              class="flex-1 space-y-md p-2 bg-surface-container-low/50 rounded-xl overflow-y-auto custom-scrollbar"
+            >
+              <!-- Card 5 -->
+              <div
+                class="task-card bg-surface border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Product</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  Pricing Tier Update
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Final sign-off required for the Enterprise plan structural
+                  changes.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9Vu2ZnV9zSVRIelpzQ9amly66nlIkf_hJZwjhj7loegVGyfEHMFSWOJd7a4ftY1xvKEUKql_RlDEhIorY3iEExKQ3oyKA6tsjkbHDqFMtJcFqJKgAbe0alXefStzQsQXrgpEHlRCrRYRcaEgYnuhw4x4MpYTN0A3-5dhUwPK16VDXdrVBrG7Wdy0cvHSlsKrhsEhrzV6e7CZmwIlerakMp9mXRiGpyBPZffa2tSwPBwXkfTGgOV7GWkUlE5EWX5I6U2-iyX2oE9VH"
+                  />
+                  <button
+                    class="text-primary font-label-sm text-label-sm hover:underline"
+                  >
+                    Review now
+                  </button>
+                </div>
+              </div>
+              <!-- Card 6 -->
+              <div
+                class="task-card bg-surface border border-outline-variant rounded-xl p-md shadow-sm"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Legal</span
+                  >
+                </div>
+                <h4 class="font-label-md text-label-md text-on-surface mb-xs">
+                  Privacy Policy v2
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Review GDPR compliance updates for the European expansion.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGSSdRK1R6AXE2O721EMKE-E8qhG9Yf0cqcjox3fzqvhHptEsgbc5U_1p8Nbb8BF40pgMgjd3DGMC39nqfG1Q9vVj7iPakaCPZPjQp05roCHZuoW56ZlrTGeuMciF15t3ZSVjpMv-XNUN9nDIUGvIALpnpIc8Y3ptxhTAH808CamDabyPMndEsD5e28Nmi7l82hszFsc0B2l2RBRuyBuCbV7ewSDAs2gFIJpQmDjFeG0ukOEaUDio8ZLbkO1R6sdpQTH0OBZGzdb08"
+                  />
+                  <span class="font-label-sm text-label-sm text-outline"
+                    >Waiting...</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Column: Done -->
+          <div class="kanban-column flex flex-col w-1/4 h-full">
+            <div class="flex items-center justify-between mb-md">
+              <div class="flex items-center gap-2">
+                <h3 class="font-title-sm text-title-sm text-on-surface">
+                  Done
+                </h3>
+                <span
+                  class="bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                  >2</span
+                >
+              </div>
+              <button
+                class="material-symbols-outlined text-outline"
+                data-icon="more_horiz"
+              >
+                more_horiz
+              </button>
+            </div>
+            <div
+              class="flex-1 space-y-md p-2 bg-surface-container-low/50 rounded-xl overflow-y-auto custom-scrollbar"
+            >
+              <!-- Card 7 -->
+              <div
+                class="task-card bg-surface/60 border border-outline-variant rounded-xl p-md shadow-sm opacity-80"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-secondary-container text-secondary px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Ops</span
+                  >
+                  <span
+                    class="material-symbols-outlined text-tertiary-container text-sm"
+                    data-icon="check_circle"
+                    data-weight="fill"
+                    style="font-variation-settings: &quot;FILL&quot; 1"
+                    >check_circle</span
+                  >
+                </div>
+                <h4
+                  class="font-label-md text-label-md text-on-surface mb-xs line-through"
+                >
+                  Workspace Setup
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Configured the new Riwiflow cloud environment for the dev
+                  team.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuBgjRL3m9DHF3YGZ9L7qA_RcRJPl4umqaWvmn8arqMVJ62uiqUkJLSwHe5p-eaqCLo2yZSC4LVLo0cbslDO3gcIK6PqLe382tdnXjbBpDC6FkUXpP3XZlkU75S0wbUMtAOqn4xdMtT87viPtxakZDhZJB8YUFPAaxX0mnjg8Z_qUthkBqjcZGc0U4-VBiMlJlnbXt_YH2yhQtZBeACrGwzPWtArKfQMb4xchwCfOiP7UGAO2E4ImwtikNOs-_QPmx-LM1ef1p5cMHam"
+                  />
+                  <span class="font-label-sm text-label-sm text-outline"
+                    >Completed</span
+                  >
+                </div>
+              </div>
+              <!-- Card 8 -->
+              <div
+                class="task-card bg-surface/60 border border-outline-variant rounded-xl p-md shadow-sm opacity-80"
+              >
+                <div class="flex items-start justify-between mb-xs">
+                  <span
+                    class="bg-secondary-container text-secondary px-2 py-0.5 rounded-full font-label-sm text-label-sm"
+                    >Design</span
+                  >
+                  <span
+                    class="material-symbols-outlined text-tertiary-container text-sm"
+                    data-icon="check_circle"
+                    data-weight="fill"
+                    style="font-variation-settings: &quot;FILL&quot; 1"
+                    >check_circle</span
+                  >
+                </div>
+                <h4
+                  class="font-label-md text-label-md text-on-surface mb-xs line-through"
+                >
+                  Style Guide v1
+                </h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Baseline UI tokens and shared components library established.
+                </p>
+                <div class="mt-md flex items-center justify-between">
+                  <img
+                    class="w-6 h-6 rounded-full border-2 border-surface"
+                    data-alt="Minimalist avatar placeholder of a professional team member. Professional and clean styling consistent with a high-end SaaS platform interface."
+                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9K3iICaEVBTkkpFrk5gFPif69E0AZFc3In0EB7uTQ2WeGftb-aoQyDUz0GlqvjL5CkxmQUnV3i_1sjr8H1wuPvSMFK6y25CjVwQj8KcnK1qkDyBqNpoWoXkaNrrmrm5zFeUP-6QY-6fuxl00FMZaVOQRETlk_p_C3LgURT1C7i4vRjlqU3B04yeqJnQyCQlPxjMKylTXCxXq0q5nNwKDD8qEzY6SC1bnyhBvNeZgcskP5LdtbbSH2Q2BYan9OlgL0W-J2uuCwGuvO"
+                  />
+                  <span class="font-label-sm text-label-sm text-outline"
+                    >Completed</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>
