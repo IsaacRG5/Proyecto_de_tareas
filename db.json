@@ -22,6 +22,27 @@
       "description": "Initialize frontend architecture",
       "status": "todo",
       "userId": 2
+    },
+    {
+      "title": "steap students",
+      "description": "backend in processe",
+      "status": "in review",
+      "userId": 2,
+      "id": "YUP7SRxoL60"
+    },
+    {
+      "title": "Setup project",
+      "description": "erg",
+      "status": "in progress",
+      "userId": 2,
+      "id": "BwCL4HmPS18"
+    },
+    {
+      "title": "Setup project",
+      "description": "edsds",
+      "status": "done",
+      "userId": 2,
+      "id": "QaQvaZeCJ2o"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
