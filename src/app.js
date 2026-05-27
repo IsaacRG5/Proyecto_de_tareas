@@ -1,21 +1,5 @@
-/* ============================================================
-   RiwiFlow — app.js
-   Handles: auth, session, routing (SPA), Kanban board,
-            role-based permissions, CRUD via json-server.
-
-   HOW TO LINK:
-     login.html  → add before </body>:  <script src="app.js"></script>
-     board.html  → add before </body>:  <script src="app.js"></script>
-
-   json-server must be running:
-     npx json-server --watch db.json --port 3000
-   ============================================================ */
-
 const API_URL = "http://localhost:3000";
 
-/* ============================================================
-   SESSION HELPERS
-   ============================================================ */
 const Session = {
   save(user) {
     sessionStorage.setItem("riwiflow_user", JSON.stringify(user));
@@ -36,9 +20,6 @@ const Session = {
   },
 };
 
-/* ============================================================
-   API HELPERS
-   ============================================================ */
 const Api = {
   async getUsers() {
     const res = await fetch(`${API_URL}/users`);
@@ -69,15 +50,10 @@ const Api = {
   },
 };
 
-/* ============================================================
-   PAGE DETECTION
-   ============================================================ */
 const isLoginPage = () => document.getElementById("loginForm") !== null;
 const isBoardPage = () => document.querySelector(".kanban-column") !== null;
 
-/* ============================================================
-   ROUTE GUARD  (HU-01, HU-02)
-   ============================================================ */
+
 function guardRoutes() {
   if (isLoginPage() && Session.isLoggedIn()) {
     window.location.href = "board.html";
@@ -87,9 +63,6 @@ function guardRoutes() {
   }
 }
 
-/* ============================================================
-   LOGIN PAGE LOGIC  (HU-01)
-   ============================================================ */
 function initLogin() {
   const form = document.getElementById("loginForm");
   if (!form) return;
@@ -137,9 +110,6 @@ function showError(el, msg) {
   el.classList.remove("hidden");
 }
 
-/* ============================================================
-   BOARD PAGE LOGIC  (HU-04, HU-07)
-   ============================================================ */
 const STATUSES = ["todo", "in progress", "in review", "done"];
 
 const STATUS_LABELS = {
@@ -161,18 +131,15 @@ async function initBoard() {
 
   renderTopBar(user);
 
-  // "New Task" button only for admin (HU-03)
   if (Session.isAdmin()) {
     renderNewTaskButton();
   }
 
   await renderBoard();
 
-  // Modal must be injected AFTER renderBoard so it's always available
   injectModal();
 }
 
-/* ---------- Top bar: user info + logout (HU-01) ---------- */
 function renderTopBar(user) {
   const header = document.querySelector("header");
   if (!header) return;
@@ -198,7 +165,6 @@ function renderTopBar(user) {
   }
 }
 
-/* ---------- Sidebar "New Task" button (admin only, HU-03) ---------- */
 function renderNewTaskButton() {
   const sideBtn = document.querySelector("aside button");
   if (!sideBtn) return;
@@ -207,7 +173,6 @@ function renderNewTaskButton() {
   sideBtn.addEventListener("click", () => openTaskModal());
 }
 
-/* ---------- Find a column's card container by status (HU-07) ---------- */
 function getColumnContainer(status) {
   const h3s = document.querySelectorAll(".kanban-column h3");
   for (const h3 of h3s) {
@@ -218,17 +183,14 @@ function getColumnContainer(status) {
   return null;
 }
 
-/* ---------- Render the full Kanban board (HU-04) ---------- */
 async function renderBoard() {
   const [tasks, users] = await Promise.all([Api.getTasks(), Api.getUsers()]);
   const currentUser = Session.get();
 
-  // Clear existing cards
   document.querySelectorAll(".kanban-column .flex-1.space-y-md").forEach((col) => {
     col.innerHTML = "";
   });
 
-  // Update column task counts
   STATUSES.forEach((status) => {
     const count = tasks.filter((t) => t.status === status).length;
     const h3 = [...document.querySelectorAll(".kanban-column h3")].find(
@@ -240,7 +202,6 @@ async function renderBoard() {
     }
   });
 
-  // Render each task in its column
   tasks.forEach((task) => {
     const assignedUser = users.find((u) => u.id === task.userId);
     // HU-05: admin can edit all | HU-06: coder can only edit their own
@@ -256,7 +217,6 @@ async function renderBoard() {
   });
 }
 
-/* ---------- Build a single task card (HU-04, HU-05, HU-06) ---------- */
 function buildTaskCard(task, assignedUser, canEdit) {
   const isDone = task.status === "done";
   const card = document.createElement("div");
@@ -291,7 +251,6 @@ function buildTaskCard(task, assignedUser, canEdit) {
     );
   }
 
-  // Delete: admin only (HU-06 — coders cannot delete)
   if (Session.isAdmin()) {
     card.querySelector(".delete-btn")?.addEventListener("click", async () => {
       if (confirm(`Delete task "${task.title}"?`)) {
@@ -304,9 +263,6 @@ function buildTaskCard(task, assignedUser, canEdit) {
   return card;
 }
 
-/* ============================================================
-   MODAL — Create / Edit Task  (HU-03, HU-05, HU-06, HU-07)
-   ============================================================ */
 function injectModal() {
   if (document.getElementById("riwiflow-modal")) return;
 
@@ -370,17 +326,14 @@ function injectModal() {
   });
 }
 
-// Tracks which task is being edited (null = create mode)
 let _editingTaskId = null;
 
-/* ---------- Open modal for create or edit (HU-03, HU-05, HU-06) ---------- */
 async function openTaskModal(task = null) {
   _editingTaskId = task ? task.id : null;
 
   const modal = document.getElementById("riwiflow-modal");
   const isAdmin = Session.isAdmin();
 
-  // Modal title
   document.getElementById("modal-title").textContent = task
     ? "Edit Task"
     : "New Task";
@@ -398,7 +351,6 @@ async function openTaskModal(task = null) {
     // Remove lock icon if present from a previous coder session
     labelTitle.querySelector(".lock-icon")?.remove();
 
-    // Populate the user dropdown
     const users = await Api.getUsers();
     const userSelect = document.getElementById("modal-task-user");
     userSelect.innerHTML = users
@@ -407,12 +359,10 @@ async function openTaskModal(task = null) {
     if (task) userSelect.value = task.userId;
 
   } else {
-    // Coder: hide user selector, title is read-only (HU-06)
     fieldUser.classList.add("hidden");
     titleInput.setAttribute("readonly", "readonly");
     titleInput.classList.add("bg-surface-container", "cursor-not-allowed");
 
-    // Add lock icon to title label if not already there
     if (!labelTitle.querySelector(".lock-icon")) {
       const lock = document.createElement("span");
       lock.className = "lock-icon material-symbols-outlined text-outline ml-1";
@@ -424,7 +374,6 @@ async function openTaskModal(task = null) {
     }
   }
 
-  // Fill fields if editing an existing task
   if (task) {
     titleInput.value = task.title;
     document.getElementById("modal-task-desc").value = task.description;
@@ -437,7 +386,6 @@ async function openTaskModal(task = null) {
 
   document.getElementById("modal-error").classList.add("hidden");
 
-  // Re-wire submit button (cloneNode removes old listeners to prevent duplicates)
   const submitBtn = document.getElementById("modal-submit");
   const newBtn = submitBtn.cloneNode(true);
   submitBtn.replaceWith(newBtn);
@@ -451,19 +399,19 @@ function closeModal() {
   _editingTaskId = null;
 }
 
-/* ---------- Validate status is one of the four canonical values (HU-07) ---------- */
+
 function isValidStatus(status) {
   return STATUSES.includes(status);
 }
 
-/* ---------- Re-validate edit permission at save time (HU-05, HU-06) ---------- */
+
 async function validateEditPermission(taskId) {
   const currentUser = Session.get();
   if (!currentUser) {
     return { allowed: false, reason: "Session expired. Please log in again." };
   }
 
-  // Admin can always edit (HU-05)
+
   if (currentUser.role === "admin") return { allowed: true, reason: "" };
 
   // Coder: cannot create (HU-06)
@@ -471,7 +419,7 @@ async function validateEditPermission(taskId) {
     return { allowed: false, reason: "Coders cannot create tasks." };
   }
 
-  // Coder: can only edit their own tasks (HU-06)
+
   try {
     const tasks = await Api.getTasks();
     const task = tasks.find((t) => t.id === taskId);
@@ -486,7 +434,7 @@ async function validateEditPermission(taskId) {
   return { allowed: true, reason: "" };
 }
 
-/* ---------- Handle modal form submit (HU-03, HU-05, HU-06, HU-07) ---------- */
+
 async function handleModalSubmit() {
   const errorEl = document.getElementById("modal-error");
   errorEl.classList.add("hidden");
@@ -496,28 +444,26 @@ async function handleModalSubmit() {
   const status      = document.getElementById("modal-task-status").value;
   const isAdmin     = Session.isAdmin();
 
-  // HU-07: Status must be one of the four canonical values
   if (!isValidStatus(status)) {
     errorEl.textContent = `Invalid status "${status}". Allowed: ${STATUSES.join(", ")}.`;
     errorEl.classList.remove("hidden");
     return;
   }
 
-  // HU-03, HU-05: Admin requires a title
+
   if (isAdmin && !title) {
     errorEl.textContent = "Title is required.";
     errorEl.classList.remove("hidden");
     return;
   }
 
-  // Description is always required
+
   if (!description) {
     errorEl.textContent = "Description is required.";
     errorEl.classList.remove("hidden");
     return;
   }
 
-  // HU-05 / HU-06: Re-validate permission server-side before writing
   const { allowed, reason } = await validateEditPermission(_editingTaskId);
   if (!allowed) {
     errorEl.textContent = reason;
@@ -548,9 +494,6 @@ async function handleModalSubmit() {
   }
 }
 
-/* ============================================================
-   UTILITIES
-   ============================================================ */
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
@@ -560,9 +503,7 @@ function escapeHtml(str) {
     .replace(/"/g, "&quot;");
 }
 
-/* ============================================================
-   BOOTSTRAP — entry point
-   ============================================================ */
+
 document.addEventListener("DOMContentLoaded", () => {
   guardRoutes();
 
