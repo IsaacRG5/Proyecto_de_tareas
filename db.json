@@ -13,6 +13,20 @@
       "email": "coder@riwiflow.com",
       "password": "123456",
       "role": "coder"
+    },
+    {
+      "id": 1779935383356,
+      "name": "isaac",
+      "email": "isaac@gmail.com",
+      "password": "123456",
+      "role": "user"
+    },
+    {
+      "id": 1779935550071,
+      "name": "luis",
+      "email": "luis@gmail.com",
+      "password": "123456",
+      "role": "admin"
     }
   ],
   "tasks": [
@@ -20,13 +34,13 @@
       "id": "1",
       "title": "Setup project",
       "description": "Initialize frontend architecture",
-      "status": "todo",
+      "status": "done",
       "userId": 2
     },
     {
       "title": "steap students",
       "description": "backend in processe",
-      "status": "in review",
+      "status": "todo",
       "userId": 2,
       "id": "YUP7SRxoL60"
     },
@@ -40,9 +54,16 @@
     {
       "title": "Setup project",
       "description": "edsds",
-      "status": "done",
+      "status": "in review",
       "userId": 2,
       "id": "QaQvaZeCJ2o"
+    },
+    {
+      "id": 1779935519814,
+      "title": "khgjh",
+      "description": "uytuytu",
+      "status": "in progress",
+      "userId": 2
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
