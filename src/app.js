@@ -1,13 +1,17 @@
-var STATUSES = ["todo", "in progress", "in review", "done"];
+// ======================================================
+// MODULE: utils.js
+// ======================================================
 
-var STATUS_LABELS = {
+const STATUSES = ["todo", "in progress", "in review", "done"];
+
+const STATUS_LABELS = {
   "todo":        "To Do",
   "in progress": "In Progress",
   "in review":   "In Review",
   "done":        "Done"
 };
 
-var COLUMN_HEADERS = {
+const COLUMN_HEADERS = {
   "todo":        "To Do",
   "in progress": "In Progress",
   "in review":   "In Review",
@@ -35,49 +39,51 @@ function generateId() {
   return Date.now();
 }
 
-var Session = {
+// ======================================================
+// MODULE: session.js
+// ======================================================
 
-  save: function(user) {
+const Session = {
+
+  save(user) {
     sessionStorage.setItem("riwiflow_user", JSON.stringify(user));
   },
 
-  get: function() {
-    var guardado = sessionStorage.getItem("riwiflow_user");
-    if (guardado) {
-      return JSON.parse(guardado);
-    }
-    return null;
+  get() {
+    const guardado = sessionStorage.getItem("riwiflow_user");
+    return guardado ? JSON.parse(guardado) : null;
   },
 
-  clear: function() {
+  clear() {
     sessionStorage.removeItem("riwiflow_user");
   },
 
-  isLoggedIn: function() {
+  isLoggedIn() {
     return !!this.get();
   },
 
-  isAdmin: function() {
-    var usuario = this.get();
+  isAdmin() {
+    const usuario = this.get();
     return !!(usuario && usuario.role === "admin");
   }
 
 };
 
+// ======================================================
+// MODULE: api.js
+// ======================================================
 
-var API_URL = "http://localhost:3000";
+const API_URL = "http://localhost:3000";
 
-var Api = {
+const Api = {
 
-  // ---------- USUARIOS ----------
-
-  getUsers: async function() {
-    var res = await fetch(API_URL + "/users");
+  async getUsers() {
+    const res = await fetch(API_URL + "/users");
     return res.json();
   },
 
-  createUser: async function(userData) {
-    var res = await fetch(API_URL + "/users", {
+  async createUser(userData) {
+    const res = await fetch(API_URL + "/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(userData)
@@ -85,14 +91,13 @@ var Api = {
     return res.json();
   },
 
-
-  getTasks: async function() {
-    var res = await fetch(API_URL + "/tasks");
+  async getTasks() {
+    const res = await fetch(API_URL + "/tasks");
     return res.json();
   },
 
-  createTask: async function(task) {
-    var res = await fetch(API_URL + "/tasks", {
+  async createTask(task) {
+    const res = await fetch(API_URL + "/tasks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(task)
@@ -100,8 +105,8 @@ var Api = {
     return res.json();
   },
 
-  updateTask: async function(id, data) {
-    var res = await fetch(API_URL + "/tasks/" + id, {
+  async updateTask(id, data) {
+    const res = await fetch(API_URL + "/tasks/" + id, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
@@ -109,27 +114,32 @@ var Api = {
     return res.json();
   },
 
-  deleteTask: async function(id) {
+  async deleteTask(id) {
     await fetch(API_URL + "/tasks/" + id, { method: "DELETE" });
   }
 
 };
 
+// ======================================================
+// MODULE: router.js
+// ======================================================
+
 function guardRoutes() {
-  // Usuario logueado intentando entrar al login → mandarlo al tablero
   if (isLoginPage() && Session.isLoggedIn()) {
     window.location.href = "board.html";
     return;
   }
-
-  // Usuario sin sesion intentando entrar al tablero → mandarlo al login
   if (isBoardPage() && !Session.isLoggedIn()) {
     window.location.href = "login.html";
   }
 }
 
+// ======================================================
+// MODULE: login.js
+// ======================================================
+
 function createErrorEl() {
-  var div = document.createElement("div");
+  const div = document.createElement("div");
   div.className = "hidden mt-2 p-3 bg-error-container text-on-error-container rounded-lg font-body-sm text-body-sm";
   return div;
 }
@@ -145,24 +155,24 @@ function hideError(el) {
 }
 
 function initLogin() {
-  var form = document.getElementById("loginForm");
+  const form = document.getElementById("loginForm");
   if (!form) return;
 
-  var errorEl = createErrorEl();
+  const errorEl = createErrorEl();
   form.appendChild(errorEl);
 
   form.addEventListener("submit", async function(e) {
     e.preventDefault();
     hideError(errorEl);
 
-    var email    = document.getElementById("email").value.trim();
-    var password = document.getElementById("password").value;
+    const email    = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
 
     try {
-      var users = await Api.getUsers();
+      const users = await Api.getUsers();
+      let usuarioEncontrado = null;
 
-      var usuarioEncontrado = null;
-      for (var i = 0; i < users.length; i++) {
+      for (let i = 0; i < users.length; i++) {
         if (users[i].email === email && users[i].password === password) {
           usuarioEncontrado = users[i];
           break;
@@ -181,40 +191,46 @@ function initLogin() {
   });
 }
 
-var MODAL_INPUT_CLASS =
+// ======================================================
+// MODULE: admin.js
+// Modales exclusivos para rol "admin":
+//   · Crear nueva tarea       (abierto desde "New Project")
+//   · Editar tarea existente  (abierto desde botón en cada tarjeta)
+//   · Crear nuevo usuario
+// ======================================================
+
+const MODAL_INPUT_CLASS =
   "w-full px-md py-2 bg-white border border-outline-variant rounded-lg " +
   "font-body-sm text-body-sm text-on-surface focus:outline-none " +
   "focus:border-primary focus:ring-2 focus:ring-primary-fixed transition-all";
 
-// Crea la capa de fondo oscuro del modal
+// ── Helpers de modal ────────────────────────────────────
+
 function createOverlay(onClose) {
-  var overlay = document.createElement("div");
+  const overlay = document.createElement("div");
   overlay.id = "admin-modal-overlay";
   overlay.className =
     "fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4";
-
-  // Cerrar al hacer click fuera del modal
   overlay.addEventListener("click", function(e) {
     if (e.target === overlay) onClose();
   });
-
   return overlay;
 }
 
 function createModalBox(title) {
-  var box = document.createElement("div");
+  const box = document.createElement("div");
   box.className =
     "bg-surface-container-lowest border border-outline-variant rounded-xl " +
     "shadow-xl w-full max-w-md p-xl space-y-lg";
 
-  var header = document.createElement("div");
+  const header = document.createElement("div");
   header.className = "flex items-center justify-between";
 
-  var h2 = document.createElement("h2");
+  const h2 = document.createElement("h2");
   h2.className = "font-headline-md text-headline-md text-on-surface";
   h2.textContent = title;
 
-  var closeBtn = document.createElement("button");
+  const closeBtn = document.createElement("button");
   closeBtn.className =
     "material-symbols-outlined text-outline hover:text-on-surface transition-colors";
   closeBtn.textContent = "close";
@@ -227,19 +243,19 @@ function createModalBox(title) {
 }
 
 function closeAdminModal() {
-  var overlay = document.getElementById("admin-modal-overlay");
+  const overlay = document.getElementById("admin-modal-overlay");
   if (overlay) overlay.remove();
 }
 
 function createField(labelText, inputEl) {
-  var wrapper = document.createElement("div");
+  const wrapper = document.createElement("div");
   wrapper.className = "space-y-xs";
 
-  var label = document.createElement("label");
+  const label = document.createElement("label");
   label.className = "font-label-md text-label-md text-on-surface block";
   label.textContent = labelText;
 
-  var errorMsg = document.createElement("p");
+  const errorMsg = document.createElement("p");
   errorMsg.className = "hidden font-body-sm text-body-sm text-error mt-xs";
 
   wrapper.appendChild(label);
@@ -249,12 +265,11 @@ function createField(labelText, inputEl) {
   return { wrapper, errorMsg };
 }
 
-// Muestra un texto de exito temporal en el modal y lo cierra
 function showSuccessAndClose(msg) {
-  var overlay = document.getElementById("admin-modal-overlay");
+  const overlay = document.getElementById("admin-modal-overlay");
   if (!overlay) return;
 
-  var box = overlay.querySelector(".bg-surface-container-lowest");
+  const box = overlay.querySelector(".bg-surface-container-lowest");
   if (!box) return;
 
   box.innerHTML =
@@ -269,74 +284,99 @@ function showSuccessAndClose(msg) {
   setTimeout(closeAdminModal, 1500);
 }
 
+// ── Helpers para construir el formulario de tarea ───────
+
+function buildTaskForm(users, prefill = {}) {
+  const form = document.createElement("div");
+  form.className = "space-y-lg";
+
+  // Título
+  const titleInput = document.createElement("input");
+  titleInput.type = "text";
+  titleInput.placeholder = "Task title";
+  titleInput.className = MODAL_INPUT_CLASS;
+  titleInput.value = prefill.title || "";
+  const titleField = createField("Title *", titleInput);
+
+  // Descripción
+  const descInput = document.createElement("textarea");
+  descInput.rows = 3;
+  descInput.placeholder = "Describe the task…";
+  descInput.className = MODAL_INPUT_CLASS + " resize-none";
+  descInput.value = prefill.description || "";
+  const descField = createField("Description", descInput);
+
+  // Estado
+  const statusSelect = document.createElement("select");
+  statusSelect.className = MODAL_INPUT_CLASS;
+  for (const s of STATUSES) {
+    const opt = document.createElement("option");
+    opt.value = s;
+    opt.textContent = STATUS_LABELS[s];
+    if (s === prefill.status) opt.selected = true;
+    statusSelect.appendChild(opt);
+  }
+  const statusField = createField("Status *", statusSelect);
+
+  // Asignar a
+  const assignSelect = document.createElement("select");
+  assignSelect.className = MODAL_INPUT_CLASS;
+  const defaultOpt = document.createElement("option");
+  defaultOpt.value = "";
+  defaultOpt.textContent = "— Unassigned —";
+  assignSelect.appendChild(defaultOpt);
+  for (const u of users) {
+    const uOpt = document.createElement("option");
+    uOpt.value = u.id;
+    uOpt.textContent = u.name + " (" + u.role + ")";
+    if (String(u.id) === String(prefill.userId)) uOpt.selected = true;
+    assignSelect.appendChild(uOpt);
+  }
+  const assignField = createField("Assign to", assignSelect);
+
+  // Error general
+  const generalError = document.createElement("p");
+  generalError.className = "hidden font-body-sm text-body-sm text-error";
+
+  form.appendChild(titleField.wrapper);
+  form.appendChild(descField.wrapper);
+  form.appendChild(statusField.wrapper);
+  form.appendChild(assignField.wrapper);
+  form.appendChild(generalError);
+
+  return { form, titleInput, descInput, statusSelect, assignSelect, titleField, generalError };
+}
+
 // ── Modal: Nueva Tarea ──────────────────────────────────
 
 async function openNewTaskModal() {
   closeAdminModal();
 
-  var users = [];
+  let users = [];
   try {
     users = await Api.getUsers();
   } catch (e) {
     console.error("No se pudieron cargar los usuarios:", e);
   }
 
-  var overlay = createOverlay(closeAdminModal);
-  var box = createModalBox("New Task");
+  const overlay = createOverlay(closeAdminModal);
+  const box     = createModalBox("New Task");
 
-  var form = document.createElement("div");
-  form.className = "space-y-lg";
+  const { form, titleInput, descInput, statusSelect, assignSelect, titleField, generalError } =
+    buildTaskForm(users);
 
-  var titleInput = document.createElement("input");
-  titleInput.type = "text";
-  titleInput.placeholder = "Task title";
-  titleInput.className = MODAL_INPUT_CLASS;
-  var titleField = createField("Title *", titleInput);
-
-  var descInput = document.createElement("textarea");
-  descInput.rows = 3;
-  descInput.placeholder = "Describe the task…";
-  descInput.className = MODAL_INPUT_CLASS + " resize-none";
-  var descField = createField("Description", descInput);
-
-  var statusSelect = document.createElement("select");
-  statusSelect.className = MODAL_INPUT_CLASS;
-  for (var s = 0; s < STATUSES.length; s++) {
-    var opt = document.createElement("option");
-    opt.value = STATUSES[s];
-    opt.textContent = STATUS_LABELS[STATUSES[s]];
-    statusSelect.appendChild(opt);
-  }
-  var statusField = createField("Status *", statusSelect);
-
-  var assignSelect = document.createElement("select");
-  assignSelect.className = MODAL_INPUT_CLASS;
-  var defaultOpt = document.createElement("option");
-  defaultOpt.value = "";
-  defaultOpt.textContent = "— Unassigned —";
-  assignSelect.appendChild(defaultOpt);
-  for (var u = 0; u < users.length; u++) {
-    var uOpt = document.createElement("option");
-    uOpt.value = users[u].id;
-    uOpt.textContent = users[u].name + " (" + users[u].role + ")";
-    assignSelect.appendChild(uOpt);
-  }
-  var assignField = createField("Assign to", assignSelect);
-
-  var generalError = document.createElement("p");
-  generalError.className = "hidden font-body-sm text-body-sm text-error";
-
-  var btnRow = document.createElement("div");
+  // Botones
+  const btnRow = document.createElement("div");
   btnRow.className = "flex gap-md pt-sm";
 
-  var cancelBtn = document.createElement("button");
+  const cancelBtn = document.createElement("button");
   cancelBtn.className =
     "flex-1 py-md border border-outline-variant rounded-lg font-label-md " +
     "text-label-md text-on-surface hover:bg-surface-container-low transition-colors";
   cancelBtn.textContent = "Cancel";
   cancelBtn.addEventListener("click", closeAdminModal);
 
-  var submitBtn = document.createElement("button");
+  const submitBtn = document.createElement("button");
   submitBtn.className =
     "flex-1 py-md bg-primary text-on-primary rounded-lg font-label-md " +
     "text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm";
@@ -344,8 +384,7 @@ async function openNewTaskModal() {
     '<span class="material-symbols-outlined text-[18px]">add</span> Create Task';
 
   submitBtn.addEventListener("click", async function() {
-    
-    var titleVal = titleInput.value.trim();
+    const titleVal = titleInput.value.trim();
     if (!titleVal) {
       titleField.errorMsg.textContent = "Title is required.";
       titleField.errorMsg.classList.remove("hidden");
@@ -357,7 +396,7 @@ async function openNewTaskModal() {
     submitBtn.innerHTML =
       '<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Saving…';
 
-    var newTask = {
+    const newTask = {
       id:          generateId(),
       title:       titleVal,
       description: descInput.value.trim(),
@@ -368,9 +407,7 @@ async function openNewTaskModal() {
     try {
       await Api.createTask(newTask);
       showSuccessAndClose("Task created successfully!");
-      setTimeout(async function() {
-        await renderBoard();
-      }, 1600);
+      setTimeout(async () => { await renderBoard(); }, 1600);
     } catch (err) {
       generalError.textContent = "Could not save task. Check the server.";
       generalError.classList.remove("hidden");
@@ -382,74 +419,147 @@ async function openNewTaskModal() {
 
   btnRow.appendChild(cancelBtn);
   btnRow.appendChild(submitBtn);
-
-  form.appendChild(titleField.wrapper);
-  form.appendChild(descField.wrapper);
-  form.appendChild(statusField.wrapper);
-  form.appendChild(assignField.wrapper);
-  form.appendChild(generalError);
   form.appendChild(btnRow);
 
   box.appendChild(form);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
-
-  // Focus en el primer campo
   titleInput.focus();
 }
 
+// ── Modal: Editar Tarea existente ───────────────────────
 
-function openNewUserModal() {
+async function openEditTaskModal(task) {
   closeAdminModal();
 
-  var overlay = createOverlay(closeAdminModal);
-  var box = createModalBox("New User");
+  let users = [];
+  try {
+    users = await Api.getUsers();
+  } catch (e) {
+    console.error("No se pudieron cargar los usuarios:", e);
+  }
 
-  var form = document.createElement("div");
-  form.className = "space-y-lg";
+  const overlay = createOverlay(closeAdminModal);
+  const box     = createModalBox("Edit Task");
 
-  var nameInput = document.createElement("input");
-  nameInput.type = "text";
-  nameInput.placeholder = "Full name";
-  nameInput.className = MODAL_INPUT_CLASS;
-  var nameField = createField("Full Name *", nameInput);
+  const { form, titleInput, descInput, statusSelect, assignSelect, titleField, generalError } =
+    buildTaskForm(users, task);
 
-  var emailInput = document.createElement("input");
-  emailInput.type = "email";
-  emailInput.placeholder = "email@company.com";
-  emailInput.className = MODAL_INPUT_CLASS;
-  var emailField = createField("Email *", emailInput);
-
-  var passInput = document.createElement("input");
-  passInput.type = "password";
-  passInput.placeholder = "••••••••";
-  passInput.className = MODAL_INPUT_CLASS;
-  var passField = createField("Password *", passInput);
-
-  var roleSelect = document.createElement("select");
-  roleSelect.className = MODAL_INPUT_CLASS;
-  ["user", "admin"].forEach(function(r) {
-    var opt = document.createElement("option");
-    opt.value = r;
-    opt.textContent = r.charAt(0).toUpperCase() + r.slice(1);
-    roleSelect.appendChild(opt);
-  });
-  var roleField = createField("Role *", roleSelect);
-
-  var generalError = document.createElement("p");
-  generalError.className = "hidden font-body-sm text-body-sm text-error";
-
-  var btnRow = document.createElement("div");
+  // Botones
+  const btnRow = document.createElement("div");
   btnRow.className = "flex gap-md pt-sm";
 
-  var cancelBtn = document.createElement("button");
+  const cancelBtn = document.createElement("button");
   cancelBtn.className =
     "flex-1 py-md border border-outline-variant rounded-lg font-label-md " +
     "text-label-md text-on-surface hover:bg-surface-container-low transition-colors";
   cancelBtn.textContent = "Cancel";
   cancelBtn.addEventListener("click", closeAdminModal);
 
-  var submitBtn = document.createElement("button");
+  const saveBtn = document.createElement("button");
+  saveBtn.className =
+    "flex-1 py-md bg-primary text-on-primary rounded-lg font-label-md " +
+    "text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm";
+  saveBtn.innerHTML =
+    '<span class="material-symbols-outlined text-[18px]">save</span> Save Changes';
+
+  saveBtn.addEventListener("click", async function() {
+    const titleVal = titleInput.value.trim();
+    if (!titleVal) {
+      titleField.errorMsg.textContent = "Title is required.";
+      titleField.errorMsg.classList.remove("hidden");
+      return;
+    }
+    titleField.errorMsg.classList.add("hidden");
+
+    saveBtn.disabled = true;
+    saveBtn.innerHTML =
+      '<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Saving…';
+
+    const updatedData = {
+      title:       titleVal,
+      description: descInput.value.trim(),
+      status:      statusSelect.value,
+      userId:      assignSelect.value ? Number(assignSelect.value) : null
+    };
+
+    try {
+      await Api.updateTask(task.id, updatedData);
+      showSuccessAndClose("Task updated successfully!");
+      setTimeout(async () => { await renderBoard(); }, 1600);
+    } catch (err) {
+      generalError.textContent = "Could not update task. Check the server.";
+      generalError.classList.remove("hidden");
+      saveBtn.disabled = false;
+      saveBtn.innerHTML =
+        '<span class="material-symbols-outlined text-[18px]">save</span> Save Changes';
+    }
+  });
+
+  btnRow.appendChild(cancelBtn);
+  btnRow.appendChild(saveBtn);
+  form.appendChild(btnRow);
+
+  box.appendChild(form);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  titleInput.focus();
+}
+
+// ── Modal: Nuevo Usuario ────────────────────────────────
+
+function openNewUserModal() {
+  closeAdminModal();
+
+  const overlay = createOverlay(closeAdminModal);
+  const box     = createModalBox("New User");
+
+  const form = document.createElement("div");
+  form.className = "space-y-lg";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.placeholder = "Full name";
+  nameInput.className = MODAL_INPUT_CLASS;
+  const nameField = createField("Full Name *", nameInput);
+
+  const emailInput = document.createElement("input");
+  emailInput.type = "email";
+  emailInput.placeholder = "email@company.com";
+  emailInput.className = MODAL_INPUT_CLASS;
+  const emailField = createField("Email *", emailInput);
+
+  const passInput = document.createElement("input");
+  passInput.type = "password";
+  passInput.placeholder = "••••••••";
+  passInput.className = MODAL_INPUT_CLASS;
+  const passField = createField("Password *", passInput);
+
+  // Roles: solo admin o coder
+  const roleSelect = document.createElement("select");
+  roleSelect.className = MODAL_INPUT_CLASS;
+  ["admin", "coder"].forEach(function(r) {
+    const opt = document.createElement("option");
+    opt.value = r;
+    opt.textContent = r.charAt(0).toUpperCase() + r.slice(1);
+    roleSelect.appendChild(opt);
+  });
+  const roleField = createField("Role *", roleSelect);
+
+  const generalError = document.createElement("p");
+  generalError.className = "hidden font-body-sm text-body-sm text-error";
+
+  const btnRow = document.createElement("div");
+  btnRow.className = "flex gap-md pt-sm";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.className =
+    "flex-1 py-md border border-outline-variant rounded-lg font-label-md " +
+    "text-label-md text-on-surface hover:bg-surface-container-low transition-colors";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", closeAdminModal);
+
+  const submitBtn = document.createElement("button");
   submitBtn.className =
     "flex-1 py-md bg-primary text-on-primary rounded-lg font-label-md " +
     "text-label-md hover:opacity-90 transition-opacity flex items-center justify-center gap-sm";
@@ -457,12 +567,11 @@ function openNewUserModal() {
     '<span class="material-symbols-outlined text-[18px]">person_add</span> Create User';
 
   submitBtn.addEventListener("click", async function() {
-    // Validaciones
-    var nameVal  = nameInput.value.trim();
-    var emailVal = emailInput.value.trim();
-    var passVal  = passInput.value;
+    const nameVal  = nameInput.value.trim();
+    const emailVal = emailInput.value.trim();
+    const passVal  = passInput.value;
 
-    var valid = true;
+    let valid = true;
 
     if (!nameVal) {
       nameField.errorMsg.textContent = "Name is required.";
@@ -494,7 +603,7 @@ function openNewUserModal() {
     submitBtn.innerHTML =
       '<span class="material-symbols-outlined text-[18px] animate-spin">autorenew</span> Saving…';
 
-    var newUser = {
+    const newUser = {
       id:       generateId(),
       name:     nameVal,
       email:    emailVal,
@@ -504,7 +613,7 @@ function openNewUserModal() {
 
     try {
       await Api.createUser(newUser);
-      showSuccessAndClose("User \"" + nameVal + "\" created!");
+      showSuccessAndClose('User "' + nameVal + '" created!');
     } catch (err) {
       generalError.textContent = "Could not save user. Check the server.";
       generalError.classList.remove("hidden");
@@ -527,25 +636,28 @@ function openNewUserModal() {
   box.appendChild(form);
   overlay.appendChild(box);
   document.body.appendChild(overlay);
-
   nameInput.focus();
 }
 
+// ── Botones admin en el sidebar ─────────────────────────
 
 function renderAdminButtons() {
   if (!Session.isAdmin()) return;
 
-  var sidebar = document.querySelector("aside");
+  const sidebar = document.querySelector("aside");
   if (!sidebar) return;
 
-  var newProjectBtn = sidebar.querySelector(".px-4.mt-auto button");
+  // "New Project" existente → abre modal de nueva tarea
+  const newProjectBtn = sidebar.querySelector(".px-4.mt-auto button");
   if (newProjectBtn) {
     newProjectBtn.addEventListener("click", openNewTaskModal);
   }
-  var adminSection = document.createElement("div");
+
+  // Inyectar solo el botón "New User"
+  const adminSection = document.createElement("div");
   adminSection.className = "px-4 mt-2";
 
-  var newUserBtn = document.createElement("button");
+  const newUserBtn = document.createElement("button");
   newUserBtn.className =
     "w-full border border-primary text-primary py-3 rounded-xl font-label-md text-label-md " +
     "flex items-center justify-center gap-2 hover:bg-primary-fixed transition-colors";
@@ -555,33 +667,32 @@ function renderAdminButtons() {
 
   adminSection.appendChild(newUserBtn);
 
-  // Insertar justo después del bloque mt-auto (donde vive "New Project")
-  var mtAutoDiv = sidebar.querySelector(".px-4.mt-auto");
+  const mtAutoDiv = sidebar.querySelector(".px-4.mt-auto");
   if (mtAutoDiv && mtAutoDiv.parentNode) {
     mtAutoDiv.parentNode.insertBefore(adminSection, mtAutoDiv.nextSibling);
   }
 }
 
+// ======================================================
+// MODULE: board.js
+// ======================================================
+
 async function initBoard() {
-  var user = Session.get();
-
+  const user = Session.get();
   renderTopBar(user);
-  renderAdminButtons();   // Solo muestra botones si es admin (verificado internamente)
-
+  renderAdminButtons();
   await renderBoard();
 }
 
-
 function renderTopBar(user) {
-  var header = document.querySelector("header");
+  const header = document.querySelector("header");
   if (!header) return;
 
-  // Badge con nombre y rol
-  var badge = document.createElement("span");
+  const badge = document.createElement("span");
   badge.className = "font-label-md text-label-md text-on-surface-variant hidden md:block";
   badge.textContent = user.name + " (" + user.role + ")";
 
-  var logoutBtn = document.createElement("button");
+  const logoutBtn = document.createElement("button");
   logoutBtn.className =
     "flex items-center gap-1 text-error font-label-md text-label-md hover:underline ml-2";
   logoutBtn.innerHTML =
@@ -592,68 +703,48 @@ function renderTopBar(user) {
     window.location.href = "login.html";
   });
 
-  var actions = header.querySelector(".flex.items-center.gap-4.ml-4");
+  const actions = header.querySelector(".flex.items-center.gap-4.ml-4");
   if (actions) {
     actions.insertBefore(badge, actions.firstChild);
     actions.appendChild(logoutBtn);
   }
 }
 
-
 function getColumnContainer(status) {
-  var h3s = document.querySelectorAll(".kanban-column h3");
-
-  for (var i = 0; i < h3s.length; i++) {
-    if (h3s[i].textContent.trim() === COLUMN_HEADERS[status]) {
-      return h3s[i].closest(".kanban-column").querySelector(".flex-1.space-y-md");
+  const h3s = document.querySelectorAll(".kanban-column h3");
+  for (const h3 of h3s) {
+    if (h3.textContent.trim() === COLUMN_HEADERS[status]) {
+      return h3.closest(".kanban-column").querySelector(".flex-1.space-y-md");
     }
   }
-
   return null;
 }
 
 async function renderBoard() {
-  var tasks = await Api.getTasks();
-  var users = await Api.getUsers();
+  const tasks = await Api.getTasks();
+  const users = await Api.getUsers();
 
-  // Limpia columnas antes de repintar
-  var columnas = document.querySelectorAll(".kanban-column .flex-1.space-y-md");
-  for (var i = 0; i < columnas.length; i++) {
-    columnas[i].innerHTML = "";
-  }
+  // Limpiar columnas
+  const columnas = document.querySelectorAll(".kanban-column .flex-1.space-y-md");
+  for (const col of columnas) col.innerHTML = "";
 
-  // Actualiza contadores de columnas
-  for (var s = 0; s < STATUSES.length; s++) {
-    var status = STATUSES[s];
-    var count  = 0;
-
-    for (var t = 0; t < tasks.length; t++) {
-      if (tasks[t].status === status) count++;
-    }
-
-    var h3s = document.querySelectorAll(".kanban-column h3");
-    for (var h = 0; h < h3s.length; h++) {
-      if (h3s[h].textContent.trim() === COLUMN_HEADERS[status]) {
-        var badge = h3s[h].nextElementSibling;
+  // Actualizar contadores
+  for (const status of STATUSES) {
+    const count = tasks.filter(t => t.status === status).length;
+    const h3s   = document.querySelectorAll(".kanban-column h3");
+    for (const h3 of h3s) {
+      if (h3.textContent.trim() === COLUMN_HEADERS[status]) {
+        const badge = h3.nextElementSibling;
         if (badge) badge.textContent = count;
       }
     }
   }
 
-  for (var t = 0; t < tasks.length; t++) {
-    var task = tasks[t];
-
-    var assignedUser = null;
-    for (var u = 0; u < users.length; u++) {
-      if (users[u].id === task.userId) {
-        assignedUser = users[u];
-        break;
-      }
-    }
-
-    var container = getColumnContainer(task.status);
+  // Pintar tarjetas
+  for (const task of tasks) {
+    const assignedUser = users.find(u => u.id === task.userId) || null;
+    const container    = getColumnContainer(task.status);
     if (!container) continue;
-
     container.appendChild(buildTaskCard(task, assignedUser));
   }
 
@@ -661,34 +752,41 @@ async function renderBoard() {
 }
 
 function buildTaskCard(task, assignedUser) {
-  var isDone = task.status === "done";
+  const isDone = task.status === "done";
 
-  var card = document.createElement("div");
+  const card = document.createElement("div");
   card.className =
     "task-card bg-surface border border-outline-variant rounded-xl p-md shadow-sm " +
     (isDone ? "opacity-80" : "");
   card.dataset.taskId = task.id;
   card.dataset.userId = task.userId;
 
-  var checkIconHTML = isDone
+  const checkIconHTML = isDone
     ? '<span class="material-symbols-outlined text-sm dnd-check-icon" ' +
       'style="font-variation-settings:\'FILL\' 1;color:#8f4200">check_circle</span>'
     : "";
 
-  var titleClass =
+  const titleClass =
     "font-label-md text-label-md text-on-surface mb-xs" +
     (isDone ? " line-through" : "");
+
+  // Botón editar (solo admin)
+  const editBtnHTML = Session.isAdmin()
+    ? '<button class="edit-task-btn material-symbols-outlined text-sm text-outline ' +
+      'hover:text-primary transition-colors" title="Edit task">edit</button>'
+    : "";
 
   card.innerHTML =
     '<div class="flex items-start justify-between mb-xs">' +
       '<span class="bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm">' +
         STATUS_LABELS[task.status] +
       "</span>" +
-      checkIconHTML +
+      '<div class="flex items-center gap-1">' +
+        editBtnHTML +
+        checkIconHTML +
+      "</div>" +
     "</div>" +
-    '<h4 class="' + titleClass + '">' +
-      escapeHtml(task.title) +
-    "</h4>" +
+    '<h4 class="' + titleClass + '">' + escapeHtml(task.title) + "</h4>" +
     '<p class="font-body-sm text-body-sm text-on-surface-variant">' +
       escapeHtml(task.description) +
     "</p>" +
@@ -698,12 +796,24 @@ function buildTaskCard(task, assignedUser) {
       "</span>" +
     "</div>";
 
+  // Conectar botón editar al modal
+  if (Session.isAdmin()) {
+    const editBtn = card.querySelector(".edit-task-btn");
+    if (editBtn) {
+      editBtn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        openEditTaskModal(task);
+      });
+    }
+  }
+
   return card;
 }
 
+// ── Drag & Drop ──────────────────────────────────────────
 
-var tarjetaArrastrada  = null;
-var idTareaArrastrada  = null;
+let tarjetaArrastrada = null;
+let idTareaArrastrada = null;
 
 function initDragAndDrop() {
   attachDragToCards();
@@ -711,10 +821,8 @@ function initDragAndDrop() {
 }
 
 function attachDragToCards() {
-  var cards = document.querySelectorAll(".task-card[data-task-id]");
-
-  for (var i = 0; i < cards.length; i++) {
-    var card = cards[i];
+  const cards = document.querySelectorAll(".task-card[data-task-id]");
+  for (const card of cards) {
     card.setAttribute("draggable", "true");
 
     card.addEventListener("dragstart", function(e) {
@@ -734,13 +842,10 @@ function attachDragToCards() {
 }
 
 function attachDropZones() {
-  var zones = document.querySelectorAll(".kanban-column .flex-1.space-y-md");
-
-  for (var i = 0; i < zones.length; i++) {
-    var zone = zones[i];
-
-    zone.addEventListener("dragover",  function(e) { e.preventDefault(); });
-    zone.addEventListener("dragenter", function(e) { e.preventDefault(); });
+  const zones = document.querySelectorAll(".kanban-column .flex-1.space-y-md");
+  for (const zone of zones) {
+    zone.addEventListener("dragover",  e => e.preventDefault());
+    zone.addEventListener("dragenter", e => e.preventDefault());
 
     zone.addEventListener("drop", function(e) {
       e.preventDefault();
@@ -748,91 +853,78 @@ function attachDropZones() {
 
       if (!tarjetaArrastrada || !idTareaArrastrada) return;
 
-      var column     = this.closest(".kanban-column");
-      var nuevoEstado = getStatusFromColumn(column);
+      const column      = this.closest(".kanban-column");
+      const nuevoEstado = getStatusFromColumn(column);
       if (!nuevoEstado) return;
 
       this.appendChild(tarjetaArrastrada);
-
       updateCardVisual(tarjetaArrastrada, nuevoEstado);
-
       updateColumnCounts();
 
-      var idParaGuardar = idTareaArrastrada;
+      const idParaGuardar = idTareaArrastrada;
       Api.updateTask(idParaGuardar, { status: nuevoEstado })
-        .catch(function(err) {
-          console.error("No se pudo guardar el cambio:", err);
-        });
+        .catch(err => console.error("No se pudo guardar el cambio:", err));
     });
   }
 }
 
 function getStatusFromColumn(columnEl) {
-  var h3 = columnEl.querySelector("h3");
+  const h3 = columnEl.querySelector("h3");
   if (!h3) return null;
-
-  var label   = h3.textContent.trim();
-  var estados = Object.keys(COLUMN_HEADERS);
-
-  for (var i = 0; i < estados.length; i++) {
-    if (COLUMN_HEADERS[estados[i]] === label) return estados[i];
-  }
-
-  return null;
+  const label = h3.textContent.trim();
+  return Object.keys(COLUMN_HEADERS).find(k => COLUMN_HEADERS[k] === label) || null;
 }
 
 function updateCardVisual(card, status) {
-  var badge  = card.querySelector(".bg-primary-fixed");
+  const badge  = card.querySelector(".bg-primary-fixed");
   if (badge) badge.textContent = STATUS_LABELS[status];
 
-  var title  = card.querySelector("h4");
-  var topRow = card.querySelector(".flex.items-start.justify-between.mb-xs");
-  var isDone = status === "done";
+  const title  = card.querySelector("h4");
+  const topRow = card.querySelector(".flex.items-start.justify-between.mb-xs");
+  const isDone = status === "done";
 
   card.classList.toggle("opacity-80", isDone);
   if (title) title.classList.toggle("line-through", isDone);
 
-  var checkIcon = topRow ? topRow.querySelector(".dnd-check-icon") : null;
+  const iconContainer = topRow ? topRow.querySelector(".flex.items-center.gap-1") : null;
+  let checkIcon = iconContainer ? iconContainer.querySelector(".dnd-check-icon") : null;
 
-  if (isDone && !checkIcon) {
+  if (isDone && !checkIcon && iconContainer) {
     checkIcon = document.createElement("span");
     checkIcon.className = "material-symbols-outlined text-sm dnd-check-icon";
     checkIcon.style.fontVariationSettings = "'FILL' 1";
     checkIcon.style.color = "#8f4200";
     checkIcon.textContent = "check_circle";
-    if (topRow) topRow.appendChild(checkIcon);
+    iconContainer.appendChild(checkIcon);
   }
 
-  if (!isDone && checkIcon) {
-    checkIcon.remove();
-  }
+  if (!isDone && checkIcon) checkIcon.remove();
 }
 
 function updateColumnCounts() {
-  var columns = document.querySelectorAll(".kanban-column");
-
-  for (var i = 0; i < columns.length; i++) {
-    var column = columns[i];
-    var count  = column.querySelectorAll(".task-card").length;
-    var h3     = column.querySelector("h3");
-
+  const columns = document.querySelectorAll(".kanban-column");
+  for (const column of columns) {
+    const count = column.querySelectorAll(".task-card").length;
+    const h3    = column.querySelector("h3");
     if (h3 && h3.nextElementSibling) {
       h3.nextElementSibling.textContent = count;
     }
   }
 }
 
+// ======================================================
+// app.js — Punto de entrada
+// ======================================================
+
 document.addEventListener("DOMContentLoaded", async function() {
 
   guardRoutes();
 
-  // Página de login
   if (isLoginPage()) {
     initLogin();
     return;
   }
 
-  // Tablero kanban
   if (isBoardPage()) {
     await initBoard();
   }
