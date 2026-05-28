@@ -46,9 +46,9 @@
     },
     {
       "title": "Setup project",
-      "description": "erg",
+      "description": "kakksasla",
       "status": "in progress",
-      "userId": 2,
+      "userId": 1779935550071,
       "id": "BwCL4HmPS18"
     },
     {
@@ -62,8 +62,15 @@
       "id": 1779935519814,
       "title": "khgjh",
       "description": "uytuytu",
-      "status": "done",
-      "userId": 2
+      "status": "in review",
+      "userId": 1779935383356
+    },
+    {
+      "id": 1779979358225,
+      "title": "isaac",
+      "description": "que las task se puedan eliminar",
+      "status": "todo",
+      "userId": 1779935383356
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"
