@@ -92,6 +92,17 @@ const Api = {
   },
   async deleteTask(id) {
     await fetch(API_URL + "/tasks/" + id, { method: "DELETE" });
+  },
+  async updateUser(id, data) {
+    const res = await fetch(API_URL + "/users/" + id, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+    return res.json();
+  },
+  async deleteUser(id) {
+    await fetch(API_URL + "/users/" + id, { method: "DELETE" });
   }
 };
 

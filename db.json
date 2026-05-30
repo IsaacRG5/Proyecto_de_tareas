@@ -40,14 +40,14 @@
     {
       "title": "steap students",
       "description": "backend in processe",
-      "status": "todo",
+      "status": "in progress",
       "userId": 2,
       "id": "YUP7SRxoL60"
     },
     {
       "title": "Setup project",
       "description": "kakksasla",
-      "status": "in progress",
+      "status": "todo",
       "userId": 1779935550071,
       "id": "BwCL4HmPS18"
     },
@@ -69,6 +69,13 @@
       "id": 1779979358225,
       "title": "isaac",
       "description": "que las task se puedan eliminar",
+      "status": "in progress",
+      "userId": 1779935383356
+    },
+    {
+      "id": 1780103290579,
+      "title": "ask",
+      "description": "zzzz",
       "status": "todo",
       "userId": 1779935383356
     }
